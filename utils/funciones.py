@@ -3,3 +3,6 @@ def validaNumeros(valor):
         return True
     else:
         return False
+
+def convertMayuscula(texto):
+    return texto.upper()
