@@ -20,15 +20,11 @@ class Proceso:
                 repetir_captura_nombres = False
 
         # Realiza ciclo para validar que la opcion ingresada sea numerica y este dentro de las opciones validas
-        while repetir_opcion_inicial == True:
-            msj = nombres + ", a continuación ingrese el valor de la opción que requiera para su consulta \n"
-            mensajes.mostrarMensaje(msj)
-            msj = "Marque 1, para consultar la disponibilidad de medicamentos \n"
-            msj += "Marque 2, para solicitar un medicamento \n"
-            mensajes.mostrarMensaje(msj)
+        while repetir_opcion_inicial == True:            
+            Proceso.menuPrincipal(nombres)
             opcion_inicial = input()
             if(funciones.validaNumeros(opcion_inicial)):
-                if(opcion_inicial != "1" and opcion_inicial != "2"):
+                if(opcion_inicial != "1" and opcion_inicial != "2" and opcion_inicial != "3"):
                     msj = "La opción ingresada no coincide con niguna de la opciones presentadas, intente de nuevo"
                     mensajes.mostrarMensaje(msj)
                     repetir_opcion_inicial = True
@@ -38,10 +34,18 @@ class Proceso:
             else:
                 repetir_opcion_inicial = True
     
+    def menuPrincipal(nombres):
+        msj = "\n" + nombres + ", a continuación ingrese el valor de la opción que requiera para su consulta \n"
+        mensajes.mostrarMensaje(msj)
+        msj = "Marque 1, para consultar la disponibilidad de medicamentos \n"
+        msj += "Marque 2, para solicitar un medicamento \n"
+        msj += "Marque 3, para finalizar el chat"
+        mensajes.mostrarMensaje(msj)
+
     def consultarMedicamentos():
         consulta_medicamento = True
         while consulta_medicamento == True:
-            msj = "Por favor ingrese el nombre del medicamento a consultar"
+            msj = "\nPor favor ingrese el nombre del medicamento a consultar"
             mensajes.mostrarMensaje(msj)
             nombres_medicamento = input()
             response = callapi.consultarMedicamentosByName(nombres_medicamento)
@@ -50,8 +54,9 @@ class Proceso:
                 if(response["disponible"]):                    
                     consulta_medicamento = False
                     Proceso.mostrarInformacionMedicamento(response)
+                    consulta_medicamento = Proceso.validarNuevamenteConsulta()
                 else:
-                    mensajes.mostrarMensaje("El medicamento no esta disponible")
+                    mensajes.mostrarMensaje("\nEl medicamento no esta disponible")
                     consulta_medicamento = Proceso.validarNuevamenteConsulta()
             else:
                 mensajes.mostrarMensaje(response["mensaje"])
@@ -60,7 +65,7 @@ class Proceso:
     def validarNuevamenteConsulta():
         repetir_opcion_consulta = True
         while repetir_opcion_consulta == True:
-            msj = "Desea consultar otro medicamento\n" 
+            msj = "\nDesea consultar otro medicamento\n" 
             msj += "Marque 1 para consultar otro medicamento\n"
             msj += "Marque 2 para finalizar el chat"
             mensajes.mostrarMensaje(msj)
@@ -69,12 +74,13 @@ class Proceso:
                 if(opcion == "1"):
                     return True
                 elif(opcion == "2"):
+                    Proceso.finalizacionChat()
                     return False
                 else:
                     repetir_opcion_consulta = True
 
     def mostrarInformacionMedicamento(response):
-        mensajes.mostrarMensaje("El medicamento está disponible")
+        mensajes.mostrarMensaje("\nEl medicamento está disponible")
         msj = "\nMedicamento: " + response["descripcion"] 
         msj += "\nCantidad:" + str(response["cantidad"])
         msj += "\nObservación:" + response["observacion"]
@@ -88,7 +94,7 @@ class Proceso:
     def mostrarMedicamentosDisponibles(response):
         repetir_solicitud_medicamento = True
         while repetir_solicitud_medicamento == True:
-            msj = "Acontinuación marque la opción del medicamento que desea solicitar\n"
+            msj = "\nAcontinuación marque la opción del medicamento que desea solicitar\n"
             mensajes.mostrarMensaje(msj)
             contador = 1
             for data in response["data"]:
@@ -97,8 +103,15 @@ class Proceso:
                 contador = contador + 1
             opcion = input()
             if(funciones.validaNumeros(opcion)):
-                repetir_solicitud_medicamento = False
-                Proceso.capturarDatosSolicitudMedicamento(response["data"], int(opcion))
+                # valida la opcion ingresada exista o coincida con un medicamento
+                if(int(opcion) > len(response["data"])):
+                    repetir_solicitud_medicamento = True
+                else:
+                    if(int(opcion) != 0):
+                        repetir_solicitud_medicamento = False
+                        Proceso.capturarDatosSolicitudMedicamento(response["data"], int(opcion))
+                    else:
+                        repetir_solicitud_medicamento = True
             else:
                 repetir_solicitud_medicamento = True
 
@@ -111,7 +124,7 @@ class Proceso:
                 break
             contador = contador + 1
 
-        msj = "Para finalizar con la solicitud por favor ingrese los siguientes datos\n"
+        msj = "\nPara finalizar con la solicitud por favor ingrese los siguientes datos\n"
         mensajes.mostrarMensaje(msj)
 
         msj = "Por ingrese nombres y apellidos \n"
@@ -133,6 +146,9 @@ class Proceso:
         msj = "Por ingrese el email o correo electronico \n"
         mensajes.mostrarMensaje(msj)
         email = input()
+
+        msj = "\nEstamos procesando su solicitud, espere un momento...\n"
+        mensajes.mostrarMensaje(msj)
 
         fecha_actual = str(datetime.now())
         asunto = "Solicitud Medicamento"
@@ -164,11 +180,13 @@ class Proceso:
             response = callapi.sendEmail(asunto, msj, email) 
             if(response["exitoso"]):  
                 callapi.guardarLogEmail(datos_log)
-                mensajes.mostrarMensaje(response["mensaje"])  
+                Proceso.finalizacionChat()
         else:
             mensajes.mostrarMensaje(result["mensaje"])
-        # if(response["exitoso"]):
-        #     mensajes.mostrarMensaje(response["mensaje"])
-        # else:
-        #     mensajes.mostrarMensaje("No se pudo enviar el email")
+            Proceso.finalizacionChat()
 
+       
+
+    def finalizacionChat():
+        msj = "\nHa finalizado el chat. Buen día"
+        mensajes.mostrarMensaje(msj)

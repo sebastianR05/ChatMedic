@@ -5,3 +5,5 @@ if(opcion_inicio == "1"):
     proceso.Proceso.consultarMedicamentos()
 elif(opcion_inicio == "2"):
     proceso.Proceso.solicitarMedicamentos()
+elif(opcion_inicio == "3"):
+    proceso.Proceso.finalizacionChat()
